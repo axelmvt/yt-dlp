@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Harvester</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Video Harvester</h1>
+            <p class="subtitle">Download videos from YouTube, TikTok, Twitter, Instagram and more</p>
+        </header>
+
+        <div class="content-wrapper">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <section class="card main-card">
+                <form method="post">
+                    <div class="form-group url-input-container">
+                        <label for="url">Video URL</label>
+                        <div class="url-input-wrapper">
+                            <input type="text" id="url" name="url" placeholder="Paste video URL here..." required>
+                            <button type="submit" class="download-btn">Download</button>
+                        </div>
+                    </div>
+                    
+                    <div class="advanced-options">
+                        <div class="options-toggle">
+                            <a href="#" id="toggle-options">Advanced Options <i class="fas fa-chevron-down"></i></a>
+                        </div>
+                        
+                        <div class="options-content" id="options-content">
+                            <div class="form-group">
+                                <label for="download_type">Download Type</label>
+                                <select id="download_type" name="download_type">
+                                    <option value="video" selected>Video (default)</option>
+                                    <option value="audio">Audio Only</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="format">Format</label>
+                                <input type="text" id="format" name="format" placeholder="e.g., mp4, mkv, mp3">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="quality">Video Quality</label>
+                                <select id="quality" name="quality">
+                                    <option value="">Best available</option>
+                                    <option value="2160">4K (2160p)</option>
+                                    <option value="1440">2K (1440p)</option>
+                                    <option value="1080">1080p</option>
+                                    <option value="720">720p</option>
+                                    <option value="480">480p</option>
+                                    <option value="360">360p</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="subtitles">Subtitles Language</label>
+                                <input type="text" id="subtitles" name="subtitles" placeholder="e.g., en, es, fr">
+                            </div>
+                            
+                            <div class="form-group checkbox-group">
+                                <input type="checkbox" id="direct_download" name="direct_download">
+                                <label for="direct_download">Direct Download</label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </section>
+            
+            <section class="card info-card">
+                <h2>Supported Platforms</h2>
+                <div class="platforms">
+                    <div class="platform">
+                        <i class="fab fa-youtube"></i>
+                        <span>YouTube</span>
+                    </div>
+                    <div class="platform">
+                        <i class="fab fa-tiktok"></i>
+                        <span>TikTok</span>
+                    </div>
+                    <div class="platform">
+                        <i class="fab fa-twitter"></i>
+                        <span>Twitter</span>
+                    </div>
+                    <div class="platform">
+                        <i class="fab fa-instagram"></i>
+                        <span>Instagram</span>
+                    </div>
+                    <div class="platform">
+                        <i class="fab fa-facebook"></i>
+                        <span>Facebook</span>
+                    </div>
+                </div>
+                <p class="more-sites">
+                    <a href="{{ url_for('supported') }}">View all supported sites</a>
+                </p>
+            </section>
+        </div>
+
+        <footer>
+            <p>Powered by <a href="https://github.com/yt-dlp/yt-dlp" target="_blank">yt-dlp</a></p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html> 
