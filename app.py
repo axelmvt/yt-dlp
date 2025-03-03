@@ -5,6 +5,7 @@ import subprocess
 import sqlite3
 from flask import Flask, render_template_string, request, redirect, url_for, flash, send_file
 from datetime import datetime
+import logging
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Replace with a secure key
@@ -13,6 +14,14 @@ DOWNLOADS_DIR = '/downloads'
 DATABASE_DIR = '/app/data'
 os.makedirs(DOWNLOADS_DIR, exist_ok=True)
 os.makedirs(DATABASE_DIR, exist_ok=True)
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
 
 # Setup database
 def init_db():
@@ -44,6 +53,7 @@ def get_cached_download(url):
         conn.commit()
         filename = result[0]
         conn.close()
+        logger.info(f"Cache hit: Serving existing file for URL: {url}")
         return filename
     
     conn.close()
@@ -70,16 +80,19 @@ def cleanup_downloads():
         c.execute("SELECT filename FROM downloads WHERE (julianday('now') - julianday(last_accessed)) > 1")
         old_files = c.fetchall()
         
+        if old_files:
+            logger.info(f"Found {len(old_files)} files that haven't been accessed in 24 hours")
+        
         for (filename,) in old_files:
             filepath = os.path.join(DOWNLOADS_DIR, os.path.basename(filename))
             if os.path.isfile(filepath):
                 try:
                     os.remove(filepath)
-                    print(f"Deleted old file: {filepath}")
+                    logger.info(f"Deleted old file: {filepath}")
                     # Remove from database
                     c.execute("DELETE FROM downloads WHERE filename = ?", (filename,))
                 except Exception as e:
-                    print(f"Error deleting file {filepath}: {e}")
+                    logger.error(f"Error deleting file {filepath}: {e}")
         
         conn.commit()
         conn.close()
@@ -543,10 +556,13 @@ def index():
             flash("URL is required!")
             return redirect(url_for('index'))
 
+        logger.info(f"Download requested for URL: {url}")
+
         # Check if this URL has already been downloaded
         cached_file = get_cached_download(url)
         if cached_file and os.path.exists(cached_file):
             flash("Using cached version. Initiating download.")
+            logger.info(f"Sending cached file to user: {cached_file}")
             return send_file(cached_file, as_attachment=True)
 
         # Compute expected output filename.
@@ -555,6 +571,7 @@ def index():
             # Add to database if it exists but wasn't in our DB
             add_download_to_db(url, expected_file)
             flash("File already exists. Initiating direct download.")
+            logger.info(f"Sending existing file to user: {expected_file}")
             return send_file(expected_file, as_attachment=True)
 
         # Build the yt-dlp command.
@@ -573,9 +590,12 @@ def index():
             cmd.extend(["--write-subs", "--sub-lang", subtitles])
         
         try:
+            logger.info(f"Starting download process for: {url}")
             subprocess.run(cmd, check=True)
+            logger.info(f"Download completed successfully for: {url}")
             flash("Download completed successfully!")
-        except subprocess.CalledProcessError:
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Download failed for {url}: {str(e)}")
             flash("An error occurred during download.")
             return redirect(url_for('index'))
         
@@ -589,8 +609,10 @@ def index():
 
         # Always stream the file immediately
         if expected_file and os.path.exists(expected_file):
+            logger.info(f"Sending newly downloaded file to user: {expected_file}")
             return send_file(expected_file, as_attachment=True)
         
+        logger.warning(f"File processed but could not be found for download: {expected_file}")
         flash("File processed but could not be found for download.")
         return redirect(url_for('index'))
     
